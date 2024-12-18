@@ -1,0 +1,72 @@
+name: Test Scalr Integration
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  run-opentofu:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Generate GitHub Actions OIDC ID Token
+        id: generate-oidc-token
+        env:
+          AUDIENCE: "scalr"
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            -d '{"audience": "'$AUDIENCE'"}' \
+            $ACTIONS_ID_TOKEN_REQUEST_URL)
+
+          OIDC_ID_TOKEN=$(echo $RESPONSE | jq -r '.value')
+          echo "OIDC_ID_TOKEN=$OIDC_ID_TOKEN" >> $GITHUB_ENV
+
+      - name: Exchange OIDC ID Token for Scalr Token
+        id: exchange-token
+        env:
+          SCALR_HOST: "{{ scalr host }}"
+        run: |
+          SCALR_TOKEN=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"id_token": "'${{ env.OIDC_ID_TOKEN }}'"}' \
+            "$SCALR_HOST/service-account/assume-with-id-token" \
+            | jq -r '.token')
+
+          echo "SCALR_TOKEN=$SCALR_TOKEN" >> $GITHUB_ENV
+
+      - name: Generate Terraform Credentials File
+        run: |
+          mkdir -p ~/.terraform.d
+          cat <<EOF > ~/.terraform.d/credentials.tfrc.json
+          {
+            "credentials": {
+              "${{ env.SCALR_HOST }}": {
+                "token": "${{ env.SCALR_TOKEN }}"
+              }
+            }
+          }
+          EOF
+
+      - name: Generate Override Configuration
+        run: |
+          cat <<EOF > override.tf
+          terraform {
+            backend "scalr" {
+              hostname = "${{ env.SCALR_HOST }}"
+            }
+          }
+          EOF
+
+      - name: Initialize and Run OpenTofu
+        run: |
+          opentofu init
+          opentofu apply -auto-approve
