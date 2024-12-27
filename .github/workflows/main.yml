@@ -34,7 +34,7 @@ jobs:
           RESPONSE=$(curl -s -w "%{http_code}" -X POST \
             -H "Content-Type: application/json" \
             -d '{"id_token": "'${{ env.OIDC_ID_TOKEN }}'", "service-account-email": "'${{ secrets.SA_EMAIL }}'"}' \
-            "${{ secrets.SCALR_HOST }}/api/iacp/v3/service-accounts/impersonate")
+            "https://${{ secrets.SCALR_HOST }}/api/iacp/v3/service-accounts/impersonate")
 
           HTTP_BODY=$(echo "$RESPONSE" | sed '$ d')
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -75,21 +75,11 @@ jobs:
           }
           EOF
       - name: Install OpenTofu
-        run: |
-          # Define the OpenTofu version to install
-          OPENTOFU_VERSION="1.8.8"
+        uses: opentofu/setup-opentofu@v1
+        with:
+          cli_config_credentials_hostname: ${{ secrets.SCALR_HOST }}
+          cli_config_credentials_token: ${{ env.SCALR_TOKEN }}
 
-          # Download OpenTofu binary
-          curl -Lo opentofu.zip "https://github.com/opentofu/opentofu/releases/download/v${OPENTOFU_VERSION}/opentofu_${OPENTOFU_VERSION}_linux_amd64.zip"
-
-          # Unzip the binary
-          unzip opentofu_${OPENTOFU_VERSION}_linux_amd64.zip
-
-          # Move the binary to a directory in PATH
-          sudo mv opentofu /usr/local/bin/opentofu
-
-          # Verify installation
-          opentofu --version
       - name: Initialize and Run OpenTofu
         run: |
           opentofu init
