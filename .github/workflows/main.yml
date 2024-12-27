@@ -56,6 +56,16 @@ jobs:
 
           echo "SCALR_TOKEN=$SCALR_TOKEN" >> $GITHUB_ENV
 
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          cli_config_credentials_hostname: ${{ secrets.SCALR_HOST }}
+          cli_config_credentials_token: ${{ env.SCALR_TOKEN }}
+      - name: OpenTofu fmt
+        id: fmt
+        run: tofu fmt -check
+        continue-on-error: true
+
       - name: Generate Override Configuration
         run: |
           cat <<EOF > override.tf
@@ -70,15 +80,6 @@ jobs:
             }
           }
           EOF
-      - name: Install OpenTofu
-        uses: opentofu/setup-opentofu@v1
-        with:
-          cli_config_credentials_hostname: ${{ secrets.SCALR_HOST }}
-          cli_config_credentials_token: ${{ env.SCALR_TOKEN }}
-      - name: OpenTofu fmt
-        id: fmt
-        run: tofu fmt -check
-        continue-on-error: true
       - name: Initialize and Run OpenTofu
         run: |
           tofu init
