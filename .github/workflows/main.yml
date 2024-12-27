@@ -8,6 +8,7 @@ on:
 jobs:
   run-opentofu:
     runs-on: ubuntu-latest
+    environment: development
 
     permissions:
       id-token: write
@@ -19,12 +20,9 @@ jobs:
 
       - name: Generate GitHub Actions OIDC ID Token
         id: generate-oidc-token
-        env:
-          AUDIENCE: "scalr"
         run: |
           RESPONSE=$(curl -s -X POST \
             -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            -d '{"audience": "'$AUDIENCE'"}' \
             $ACTIONS_ID_TOKEN_REQUEST_URL)
 
           OIDC_ID_TOKEN=$(echo $RESPONSE | jq -r '.value')
@@ -32,14 +30,12 @@ jobs:
 
       - name: Exchange OIDC ID Token for Scalr Token
         id: exchange-token
-        env:
-          SCALR_HOST: "{{ scalr host }}"
         run: |
           SCALR_TOKEN=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -d '{"id_token": "'${{ env.OIDC_ID_TOKEN }}'"}' \
-            "$SCALR_HOST/service-account/assume-with-id-token" \
-            | jq -r '.token')
+            "${{ secrets.SCALR_HOST }}/api/iacp/v3/service-accounts/impersonate" \
+            | jq -r '.data.attributes.token')
 
           echo "SCALR_TOKEN=$SCALR_TOKEN" >> $GITHUB_ENV
 
@@ -49,7 +45,7 @@ jobs:
           cat <<EOF > ~/.terraform.d/credentials.tfrc.json
           {
             "credentials": {
-              "${{ env.SCALR_HOST }}": {
+              "${{ secrets.SCALR_HOST }}": {
                 "token": "${{ env.SCALR_TOKEN }}"
               }
             }
@@ -61,7 +57,7 @@ jobs:
           cat <<EOF > override.tf
           terraform {
             backend "scalr" {
-              hostname = "${{ env.SCALR_HOST }}"
+              hostname = "${{ secrets.SCALR_HOST }}"
             }
           }
           EOF
