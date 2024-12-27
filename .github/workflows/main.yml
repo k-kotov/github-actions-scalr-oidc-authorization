@@ -31,11 +31,18 @@ jobs:
       - name: Exchange OIDC ID Token for Scalr Token
         id: exchange-token
         run: |
-          SCALR_TOKEN=$(curl -s -X POST \
+          RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
-            -d '{"id_token": "'${{ env.OIDC_ID_TOKEN }}'"}' \
+            -d '{"id_token": "'${{ env.OIDC_ID_TOKEN }}'", "service-account-email": "'${{ secrets.SA_EMAIL }}'"}' \
             "${{ secrets.SCALR_HOST }}/api/iacp/v3/service-accounts/impersonate" \
             | jq -r '.data.attributes.token')
+          SCALR_TOKEN=$(echo "$RESPONSE" | jq -r '.data.attributes.token' 2>/dev/null)
+
+          if [ $? -ne 0 ] || [ -z "$SCALR_TOKEN" ] || [ "$SCALR_TOKEN" == "null" ]; then
+            echo "Error: Failed to parse response. Full response:"
+            echo "$RESPONSE"
+            exit 1
+          fi
 
           echo "SCALR_TOKEN=$SCALR_TOKEN" >> $GITHUB_ENV
 
