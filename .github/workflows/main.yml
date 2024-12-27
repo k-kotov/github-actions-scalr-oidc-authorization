@@ -31,16 +31,22 @@ jobs:
       - name: Exchange OIDC ID Token for Scalr Token
         id: exchange-token
         run: |
-          RESPONSE=$(curl -s -X POST \
+          RESPONSE=$(curl -s -w "%{http_code}" -X POST \
             -H "Content-Type: application/json" \
             -d '{"id_token": "'${{ env.OIDC_ID_TOKEN }}'", "service-account-email": "'${{ secrets.SA_EMAIL }}'"}' \
-            "${{ secrets.SCALR_HOST }}/api/iacp/v3/service-accounts/impersonate" \
-            | jq -r '.data.attributes.token')
-          SCALR_TOKEN=$(echo "$RESPONSE" | jq -r '.data.attributes.token' || true)
+            "${{ secrets.SCALR_HOST }}/api/iacp/v3/service-accounts/impersonate")
 
+          HTTP_BODY=$(echo "$RESPONSE" | sed '$ d')
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+
+          if [ "$HTTP_CODE" -ne 201 ]; then
+            echo "Error: Failed to exchange token. HTTP status: $HTTP_CODE"
+            echo "Response body: $HTTP_BODY"
+            exit 1
+          fi
+          SCALR_TOKEN=$(echo "$HTTP_BODY" | jq -r '.data.attributes.token')
           if [ -z "$SCALR_TOKEN" ] || [ "$SCALR_TOKEN" == "null" ]; then
-            echo "Error: Failed to parse response. Full response:"
-            echo "$RESPONSE"
+            echo "Error: Token not found in response."
             exit 1
           fi
 
