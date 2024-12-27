@@ -5,6 +5,10 @@ on:
     branches:
       - master
 
+env:
+  SCALR_ENVIRONMENT: tfenv1
+  SCALR_WORKSPACE: github-oidc-test
+
 jobs:
   run-opentofu:
     runs-on: ubuntu-latest
@@ -52,25 +56,17 @@ jobs:
 
           echo "SCALR_TOKEN=$SCALR_TOKEN" >> $GITHUB_ENV
 
-      - name: Generate Terraform Credentials File
-        run: |
-          mkdir -p ~/.terraform.d
-          cat <<EOF > ~/.terraform.d/credentials.tfrc.json
-          {
-            "credentials": {
-              "${{ secrets.SCALR_HOST }}": {
-                "token": "${{ env.SCALR_TOKEN }}"
-              }
-            }
-          }
-          EOF
-
       - name: Generate Override Configuration
         run: |
           cat <<EOF > override.tf
           terraform {
-            backend "scalr" {
+            cloud {
               hostname = "${{ secrets.SCALR_HOST }}"
+              organization = "${{ env.SCALR_ENVIRONMENT }}"
+
+              workspaces {
+                name = "${{ env.SCALR_WORKSPACE }}"
+              }
             }
           }
           EOF
@@ -79,8 +75,11 @@ jobs:
         with:
           cli_config_credentials_hostname: ${{ secrets.SCALR_HOST }}
           cli_config_credentials_token: ${{ env.SCALR_TOKEN }}
-
+      - name: OpenTofu fmt
+        id: fmt
+        run: tofu fmt -check
+        continue-on-error: true
       - name: Initialize and Run OpenTofu
         run: |
-          opentofu init
-          opentofu apply -auto-approve
+          tofu init
+          tofu apply -auto-approve
