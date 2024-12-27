@@ -61,7 +61,23 @@ jobs:
             }
           }
           EOF
+      - name: Install OpenTofu
+        run: |
+          # Define the OpenTofu version to install
+          OPENTOFU_VERSION="1.8.8"
 
+          # Download OpenTofu binary
+          curl -Lo opentofu.zip "https://github.com/opentofu/opentofu/releases/download/v${OPENTOFU_VERSION}/opentofu_${OPENTOFU_VERSION}_linux_amd64.zip"
+
+          # Unzip the binary
+          sudo apt-get install -y unzip
+          unzip opentofu.zip
+
+          # Move the binary to a directory in PATH
+          sudo mv opentofu /usr/local/bin/opentofu
+
+          # Verify installation
+          opentofu --version
       - name: Initialize and Run OpenTofu
         run: |
           opentofu init
