@@ -3,7 +3,7 @@ name: Test Scalr Integration
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   run-opentofu:
