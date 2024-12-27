@@ -83,8 +83,7 @@ jobs:
           curl -Lo opentofu.zip "https://github.com/opentofu/opentofu/releases/download/v${OPENTOFU_VERSION}/opentofu_${OPENTOFU_VERSION}_linux_amd64.zip"
 
           # Unzip the binary
-          sudo apt-get install -y unzip
-          unzip opentofu.zip
+          unzip opentofu_${OPENTOFU_VERSION}_linux_amd64.zip.zip
 
           # Move the binary to a directory in PATH
           sudo mv opentofu /usr/local/bin/opentofu
