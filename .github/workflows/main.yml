@@ -48,7 +48,7 @@ jobs:
             echo "Response body: $HTTP_BODY"
             exit 1
           fi
-          SCALR_TOKEN=$(echo "$HTTP_BODY" | jq -r '.data.attributes."access-token"')
+          SCALR_TOKEN=$(echo "$HTTP_BODY" | jq -r '."access-token"')
           if [ -z "$SCALR_TOKEN" ] || [ "$SCALR_TOKEN" == "null" ]; then
             echo "Error: Token not found in response."
             exit 1
