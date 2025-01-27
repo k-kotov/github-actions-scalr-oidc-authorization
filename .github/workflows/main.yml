@@ -43,12 +43,12 @@ jobs:
           HTTP_BODY=$(echo "$RESPONSE" | sed '$ d')
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
 
-          if [ "$HTTP_CODE" -ne 201 ]; then
+          if [ "$HTTP_CODE" -ne 200 ]; then
             echo "Error: Failed to exchange token. HTTP status: $HTTP_CODE"
             echo "Response body: $HTTP_BODY"
             exit 1
           fi
-          SCALR_TOKEN=$(echo "$HTTP_BODY" | jq -r '.data.attributes.token')
+          SCALR_TOKEN=$(echo "$HTTP_BODY" | jq -r '.data.attributes.access-token')
           if [ -z "$SCALR_TOKEN" ] || [ "$SCALR_TOKEN" == "null" ]; then
             echo "Error: Token not found in response."
             exit 1
