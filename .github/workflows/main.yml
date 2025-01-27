@@ -38,7 +38,7 @@ jobs:
           RESPONSE=$(curl -s -w "%{http_code}" -X POST \
             -H "Content-Type: application/json" \
             -d '{"id_token": "'${{ env.OIDC_ID_TOKEN }}'", "service-account-email": "'${{ secrets.SA_EMAIL }}'"}' \
-            "https://${{ secrets.SCALR_HOST }}/api/iacp/v3/service-accounts/impersonate")
+            "https://${{ secrets.SCALR_HOST }}/api/iacp/v3/service-accounts/assume")
 
           HTTP_BODY=$(echo "$RESPONSE" | sed '$ d')
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
