@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - Heshercat-patch-1
 
 env:
   SCALR_ENVIRONMENT: Environment-A
