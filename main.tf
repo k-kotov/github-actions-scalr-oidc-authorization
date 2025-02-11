@@ -9,5 +9,5 @@ resource "time_sleep" "wait" {
 }
 
 output "message" {
-  value = "OpenTofu configuration with Scalr backend successfully pushed!"
+  value = "OpenTofu configuration with Scalr backend successfully pushed! Patch"
 }
