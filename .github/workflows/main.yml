@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  SCALR_ENVIRONMENT: tfenv1
+  SCALR_ENVIRONMENT: Environment-A
   SCALR_WORKSPACE: github-oidc-test
 
 jobs:
