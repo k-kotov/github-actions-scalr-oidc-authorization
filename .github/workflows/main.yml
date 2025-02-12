@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-
 env:
   SCALR_ENVIRONMENT: Environment-A
   SCALR_WORKSPACE: github-oidc-test
@@ -27,10 +26,17 @@ jobs:
         run: |
           RESPONSE=$(curl -s -X POST \
             -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            $ACTIONS_ID_TOKEN_REQUEST_URL)
+            "$ACTIONS_ID_TOKEN_REQUEST_URL")
 
           OIDC_ID_TOKEN=$(echo $RESPONSE | jq -r '.value')
+          
+          if [ -z "$OIDC_ID_TOKEN" ] || [ "$OIDC_ID_TOKEN" == "null" ]; then
+            echo "Error: Failed to retrieve OIDC token."
+            exit 1
+          fi
+          
           echo "OIDC_ID_TOKEN=$OIDC_ID_TOKEN" >> $GITHUB_ENV
+          echo "OIDC_ID_TOKEN extracted successfully."
 
       - name: Exchange OIDC ID Token for Scalr Token
         id: exchange-token
@@ -43,9 +49,11 @@ jobs:
           HTTP_BODY=$(echo "$RESPONSE" | sed '$ d')
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
 
+          echo "Scalr Response: $HTTP_BODY"
+          echo "HTTP Status Code: $HTTP_CODE"
+
           if [ "$HTTP_CODE" -ne 200 ]; then
             echo "Error: Failed to exchange token. HTTP status: $HTTP_CODE"
-            echo "Response body: $HTTP_BODY"
             exit 1
           fi
           SCALR_TOKEN=$(echo "$HTTP_BODY" | jq -r '."access-token"')
@@ -53,14 +61,16 @@ jobs:
             echo "Error: Token not found in response."
             exit 1
           fi
-
+          
           echo "SCALR_TOKEN=$SCALR_TOKEN" >> $GITHUB_ENV
+          echo "Scalr token retrieved successfully."
 
       - name: Install OpenTofu
         uses: opentofu/setup-opentofu@v1
         with:
           cli_config_credentials_hostname: ${{ secrets.SCALR_HOST }}
           cli_config_credentials_token: ${{ env.SCALR_TOKEN }}
+
       - name: OpenTofu fmt
         id: fmt
         run: tofu fmt -check
@@ -70,17 +80,19 @@ jobs:
         run: |
           cat <<EOF > override.tf
           terraform {
-            cloud {
+            backend "remote" {
               hostname = "${{ secrets.SCALR_HOST }}"
               organization = "${{ env.SCALR_ENVIRONMENT }}"
-
               workspaces {
                 name = "${{ env.SCALR_WORKSPACE }}"
               }
             }
           }
           EOF
+          echo "override.tf configuration generated successfully."
+
       - name: Initialize and Run OpenTofu
         run: |
+          tofu version
           tofu init
           tofu apply -auto-approve
