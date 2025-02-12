@@ -103,6 +103,5 @@ jobs:
       - name: Initialize and Run OpenTofu
         run: |
           tofu version
-          tofu workspace list
           tofu init
           tofu apply -auto-approve
