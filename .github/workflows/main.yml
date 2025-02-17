@@ -38,6 +38,13 @@ jobs:
           echo "OIDC_ID_TOKEN=$OIDC_ID_TOKEN" >> $GITHUB_ENV
           echo "OIDC_ID_TOKEN extracted successfully."
 
+      - name: Debug OIDC Token
+        run: |
+          echo "OIDC_ID_TOKEN: ${OIDC_ID_TOKEN}" | sed 's/./& /g'
+          echo "OIDC Token Audience: $(echo '${{ env.OIDC_ID_TOKEN }}' | jq -R 'split(".") | .[1] | @base64d | fromjson | .aud')"
+          echo "OIDC Token Issuer: $(echo '${{ env.OIDC_ID_TOKEN }}' | jq -R 'split(".") | .[1] | @base64d | fromjson | .iss')"
+          echo "OIDC Token Expiration: $(echo '${{ env.OIDC_ID_TOKEN }}' | jq -R 'split(".") | .[1] | @base64d | fromjson | .exp')"
+
       - name: Exchange OIDC ID Token for Scalr Token
         id: exchange-token
         run: |
