@@ -5,8 +5,8 @@ on:
     branches:
       - master
 env:
-  SCALR_ENVIRONMENT: gggggggggggggggggg@pink-pony.main.scalr.dev
-  SCALR_WORKSPACE: github-oidc-test
+  SCALR_ENVIRONMENT: my-awesome-environment-my-awesome-environment
+  SCALR_WORKSPACE: CLI
 
 jobs:
   run-opentofu:
